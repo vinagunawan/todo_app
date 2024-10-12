@@ -1,58 +1,33 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'todo_database.dart'; 
 
 void main() {
   runApp(TodoApp());
 }
 
-class TodoApp extends StatefulWidget {
+class TodoApp extends StatelessWidget {
   @override
-  _TodoAppState createState() => _TodoAppState();
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      theme: ThemeData(
+        primarySwatch: Colors.green,
+        scaffoldBackgroundColor: Color(0xFFEFEFEF), 
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+      ),
+      home: TodoListScreen(),
+    );
+  }
 }
 
-class _TodoAppState extends State<TodoApp> {
-  List<dynamic> tasks = []; // Menambahkan tipe data List<dynamic>
+class TodoListScreen extends StatefulWidget {
+  @override
+  _TodoListScreenState createState() => _TodoListScreenState();
+}
+
+class _TodoListScreenState extends State<TodoListScreen> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
-
-  Future<void> fetchTasks() async {
-    final response = await http.get(Uri.parse('http://localhost:3000/tasks'));
-    if (response.statusCode == 200) {
-      setState(() {
-        tasks = json.decode(response.body);
-      });
-    }
-  }
-
-  Future<void> addTask(String title, String description) async {
-    final response = await http.post(
-      Uri.parse('http://localhost:3000/tasks'),
-      headers: {"Content-Type": "application/json"},
-      body: json.encode({'title': title, 'description': description}),
-    );
-    if (response.statusCode == 200) {
-      fetchTasks();
-      _titleController.clear();
-      _descriptionController.clear();
-    }
-  }
-
-  Future<void> updateTask(int id, bool isCompleted) async {
-    final response = await http.put(
-      Uri.parse('http://localhost:3000/tasks/$id'),
-      headers: {"Content-Type": "application/json"},
-      body: json.encode({'is_completed': isCompleted ? 1 : 0}),
-    );
-    if (response.statusCode == 200) {
-      fetchTasks();
-    }
-  }
-
-  Future<void> deleteTask(int id) async {
-    await http.delete(Uri.parse('http://localhost:3000/tasks/$id'));
-    fetchTasks();
-  }
+  List<dynamic> tasks = [];
 
   @override
   void initState() {
@@ -60,77 +35,134 @@ class _TodoAppState extends State<TodoApp> {
     fetchTasks();
   }
 
+  void fetchTasks() async {
+    tasks = await TodoDatabase.fetchTasks();
+    setState(() {});
+  }
+
+  void addTask(String title, String description) async {
+    await TodoDatabase.addTask(title, description);
+    fetchTasks();
+    _titleController.clear();
+    _descriptionController.clear();
+  }
+
+  void updateTask(int id, bool isCompleted) async {
+    await TodoDatabase.updateTask(id, isCompleted);
+    fetchTasks();
+  }
+
+  void deleteTask(int id) async {
+    await TodoDatabase.deleteTask(id);
+    fetchTasks();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(
-          title: Text('Aplikasi To-Do List'),
-        ),
-        body: Column(
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Your To-Do List', style: TextStyle(color: Colors.white)),
+        backgroundColor: Color(0xFF87A96B), 
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                children: [
-                  TextField(
-                    controller: _titleController,
-                    decoration: InputDecoration(
-                      hintText: 'Masukkan judul tugas',
-                    ),
-                  ),
-                  TextField(
-                    controller: _descriptionController,
-                    decoration: InputDecoration(
-                      hintText: 'Masukkan deskripsi tugas',
-                    ),
-                  ),
-                  ElevatedButton(
-                    onPressed: () {
-                      addTask(_titleController.text, _descriptionController.text);
-                    },
-                    child: Text('Tambahkan Tugas'),
-                  ),
-                ],
-              ),
+            _buildInputFields(),
+            SizedBox(height: 20),
+            _buildTaskTable(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInputFields() {
+    return Column(
+      children: [
+        TextField(
+          controller: _titleController,
+          decoration: InputDecoration(
+            hintText: 'Judul tugas',
+            filled: true,
+            fillColor: Colors.white,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10.0),
             ),
-            Expanded(
-              child: ListView.builder(
-                itemCount: tasks.length,
-                itemBuilder: (context, index) {
-                  final task = tasks[index];
-                  return ListTile(
+          ),
+        ),
+        SizedBox(height: 10),
+        TextField(
+          controller: _descriptionController,
+          decoration: InputDecoration(
+            hintText: 'Deskripsi tugas',
+            filled: true,
+            fillColor: Colors.white,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10.0),
+            ),
+          ),
+        ),
+        SizedBox(height: 10),
+        ElevatedButton(
+          onPressed: () => addTask(_titleController.text, _descriptionController.text),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Color(0xFF87A96B), 
+          ),
+          child: Text('Tambahkan Tugas', style: TextStyle(color: Colors.white)),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTaskTable() {
+    return Expanded(
+      child: tasks.isEmpty
+          ? Center(child: Text('Belum ada tugas'))
+          : ListView.builder(
+              itemCount: tasks.length,
+              itemBuilder: (context, index) {
+                final task = tasks[index];
+                return Card(
+                  color: task['is_completed'] == 1 ? Color(0xFFD3E4CD) : Colors.white,
+                  elevation: 2,
+                  margin: EdgeInsets.symmetric(vertical: 8),
+                  child: ListTile(
                     title: Text(
                       task['title'],
                       style: TextStyle(
+                        fontWeight: FontWeight.bold,
                         decoration: task['is_completed'] == 1
                             ? TextDecoration.lineThrough
                             : TextDecoration.none,
+                        color: task['is_completed'] == 1
+                            ? Color(0xFF87A96B) 
+                            : Colors.black,
                       ),
                     ),
-                    subtitle: Text(task['description']), // Menampilkan deskripsi tugas
+                    subtitle: Text(task['description']),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Checkbox(
                           value: task['is_completed'] == 1,
                           onChanged: (bool? value) {
+                            setState(() {
+                              task['is_completed'] = value! ? 1 : 0; 
+                            });
                             updateTask(task['id'], value!);
                           },
                         ),
                         IconButton(
-                          icon: Icon(Icons.delete),
+                          icon: Icon(Icons.delete, color: Colors.red),
                           onPressed: () => deleteTask(task['id']),
                         ),
                       ],
                     ),
-                  );
-                },
-              ),
+                  ),
+                );
+              },
             ),
-          ],
-        ),
-      ),
     );
   }
 }
