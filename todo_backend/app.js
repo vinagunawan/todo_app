@@ -85,7 +85,7 @@ app.delete('/tasks/:id', (req, res) => {
 });
 
 // Menjalankan server di port 3000
-const PORT = 3000;
+const PORT = 4000;
 app.listen(PORT, () => {
   console.log(`Server berjalan di port ${PORT}`);
 });
