@@ -12,11 +12,10 @@ services:
     depends_on:
       - db
     environment:
-      DB_HOST: db          # Menggunakan nama service dari database
-      DB_USER: root        # Username MySQL
-      DB_PASSWORD: password # Password MySQL
-      DB_NAME: todo_app     # Nama database
-
+      DB_HOST: db          
+      DB_USER: root        
+      DB_PASSWORD: password 
+      DB_NAME: todo_app     
   db:
     image: mysql
     environment:
