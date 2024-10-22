@@ -6,14 +6,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Koneksi ke database MySQL
-const db = mysql.createConnection({
-  host: 'localhost',
-  user: 'root',
-  password: '',
-  database: 'todo_app',
-});
-
 // Cek koneksi database
 db.connect((err) => {
   if (err) {
@@ -84,7 +76,7 @@ app.delete('/tasks/:id', (req, res) => {
   });
 });
 
-// Menjalankan server di port 3000
+// Menjalankan server di port 4000
 const PORT = 4000;
 app.listen(PORT, () => {
   console.log(`Server berjalan di port ${PORT}`);
