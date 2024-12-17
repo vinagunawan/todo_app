@@ -6,6 +6,14 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Inisialisasi koneksi ke database MySQL
+const db = mysql.createConnection({
+  host: 'localhost',   
+  user: 'root',        
+  password: '',        
+  database: 'todo_app' 
+});
+
 // Cek koneksi database
 db.connect((err) => {
   if (err) {
